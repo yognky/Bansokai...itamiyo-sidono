@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 -- ===========================
@@ -11,14 +10,15 @@ local Workspace = game:GetService("Workspace")
 -- ===========================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "VisualMenu"
+screenGui.ResetOnSpawn = false
 screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 300, 0, 200)
-mainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- center
 mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 mainFrame.BorderSizePixel = 0
-mainFrame.Visible = false
+mainFrame.Visible = true -- start visible supaya pasti keliatan
 mainFrame.Parent = screenGui
 
 local title = Instance.new("TextLabel")
@@ -37,7 +37,9 @@ closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
 closeBtn.Parent = mainFrame
-closeBtn.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
 
 -- Tombol
 local killBtn = Instance.new("TextButton")
@@ -73,7 +75,12 @@ local flySpeed = 50
 local function visualKillAll()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.Health = 0
+            -- client-side effect: ganti warna transparan supaya terlihat mati
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 0.7
+                end
+            end
         end
     end
 end
@@ -98,13 +105,17 @@ RunService.RenderStepped:Connect(function(delta)
     if flyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
         local direction = Vector3.new(0,0,0)
+
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + hrp.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - hrp.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - hrp.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + hrp.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction = direction + Vector3.new(0,1,0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then direction = direction - Vector3.new(0,1,0) end
-        hrp.CFrame = hrp.CFrame + direction.Unit * flySpeed * delta
+
+        if direction.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + direction.Unit * flySpeed * delta
+        end
     end
 end)
 
@@ -113,9 +124,8 @@ end)
 -- ===========================
 LocalPlayer.Chatted:Connect(function(msg)
     if msg:lower():match("shinra tensei") then
-        -- Hapus semua terrain di client saja
         if Workspace:FindFirstChild("Terrain") then
-            Workspace.Terrain:Clear()
+            Workspace.Terrain:Clear() -- client-side
         end
     end
 end)
